@@ -410,6 +410,24 @@ CONFIG_BROKER_URL="mqtt://test.mosquitto.org"
 # end of Example Configuration
 
 #
+# LoRa Configuration
+#
+CONFIG_GPIO_RANGE_MAX=33
+CONFIG_433MHZ=y
+# CONFIG_866MHZ is not set
+# CONFIG_915MHZ is not set
+# CONFIG_OTHER is not set
+# CONFIG_ADVANCED is not set
+CONFIG_MISO_GPIO=19
+CONFIG_SCK_GPIO=5
+CONFIG_MOSI_GPIO=27
+CONFIG_CS_GPIO=18
+CONFIG_RST_GPIO=14
+CONFIG_SPI2_HOST=y
+# CONFIG_SPI3_HOST is not set
+# end of LoRa Configuration
+
+#
 # Example Connection Configuration
 #
 CONFIG_ENV_GPIO_RANGE_MIN=0
