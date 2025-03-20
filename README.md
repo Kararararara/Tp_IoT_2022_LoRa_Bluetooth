@@ -48,12 +48,17 @@ Groupe 1: Envoyer un message mqtt donnant les valeurs nécessaires à une recept
 
 Groupe 2. Ecouter les messages mqtt en en déduire les valeurs pour un envoi de données via Lora.
 
+(Voir image)
+![Capture_envoi_msg](https://github.com/user-attachments/assets/5111768c-bac1-4f57-a8b9-8e413649851b)
 
 ### 3. Communiquer via LoRa des données
 
 Groupe 1: Écouter les messages LoRa et les afficher.
 
 Groupe 2. Envoyer un message LoRa contenant des données (potentiellement en utilisant un caoteur.
+
+(Voir image)
+![Capture_envoi_msg2](https://github.com/user-attachments/assets/33501e86-b312-40f6-afc5-a7b300ca2905)
 
 ## 3. Inversion
 
