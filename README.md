@@ -99,6 +99,37 @@ Après avoir réussi une communication, la carte du groupe 1 et celle du groupe 
 ## 5. I2C Basic
 À la place de communiquer des messages, je récupère les données de mon capteur gy-49 et l'envoie en m'authentifiant avec le mot de passe.
 
+// 📡 Initialisation I2C
+static esp_err_t i2c_master_init() {
+    i2c_config_t conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = I2C_MASTER_FREQ_HZ
+    };
+    ESP_ERROR_CHECK(i2c_param_config(I2C_MASTER_NUM, &conf));
+    return i2c_driver_install(I2C_MASTER_NUM, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+}
+
+// 📡 Lecture du capteur GY-49
+static uint16_t gy49_read_data() {
+    uint8_t data[2] = {0};
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (GY49_SENSOR_ADDR << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_write_byte(cmd, GY49_DATA_REG, true);
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (GY49_SENSOR_ADDR << 1) | I2C_MASTER_READ, true);
+    i2c_master_read(cmd, data, sizeof(data), I2C_MASTER_LAST_NACK);
+    i2c_master_stop(cmd);
+    i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    i2c_cmd_link_delete(cmd);
+    return ((uint16_t)data[0] << 8) | data[1];
+}
+
+![image](https://github.com/user-attachments/assets/4deb6712-9c3d-4fc4-92de-803319754ba0)
 
 ## 6. Bluetooth (ou BLE)
 
