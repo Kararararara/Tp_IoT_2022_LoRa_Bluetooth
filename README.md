@@ -1,6 +1,8 @@
-# Tp_IoT_2022_LoRa_Bluetooth
+![image](https://github.com/user-attachments/assets/01aa849c-e273-4cc5-bfc2-6ba98be22c5c)# Tp_IoT_2022_LoRa_Bluetooth
 
-Ce TP est à réaliser à deux groupes.
+Ce TP est à réaliser à deux groupes :
+  Groupe 1 : Baptiste LEPIGEON et Tommy HERMOUET.
+  Groupe 2 : Abdallah AIDARA et Kamel SEMMAR
 
 ## 1. Mise en place
 
@@ -11,18 +13,43 @@ cf. [https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32/get-started/index
 Documentation de la board: [http://www.smartcomputerlab.org/](http://www.smartcomputerlab.org/)
 
 ### 2. Se connecter sur un point d'accès Wifi
+Nous avons ajouter ce bout de code pour ce connecté au partage de connexion (iPhone de Karara) :
+
+  #define WIFI_SSID "iPhone de Karara"
+  #define WIFI_PASS "00000000"
+  
+    // 📡 Connexion au WiFi
+    esp_err_t wifi_init_sta(void) {
+        esp_err_t ret = nvs_flash_init();
+        if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+            ESP_ERROR_CHECK(nvs_flash_erase());
+            ret = nvs_flash_init();
+        }
+        ESP_ERROR_CHECK(ret);
+        ESP_ERROR_CHECK(esp_netif_init());
+        ESP_ERROR_CHECK(esp_event_loop_create_default());
+        ESP_ERROR_CHECK(example_connect());
+        return ESP_OK;
+    }
+(Voir image)
+![image](https://github.com/user-attachments/assets/bcfe8e92-cefd-4099-a2df-01343a88c049)
 
 ### 3. Envoyer un message mqtt sur le broker test.mosquitto.org au topic tp/alban
+(Voir image : Capture)
 
 ## 2. LoRa
 
 ### 1. Définir des valeurs communes (à faire au tableau)
+On a définit ces valeurs pour nos deux groupes :
+  #define MQTT_TOPIC "kbssa"
+  #define LORA_PASSWORD "kbssa123"
 
 ### 2. Communiquer via mqtt des données
 
 Groupe 1: Envoyer un message mqtt donnant les valeurs nécessaires à une reception via LoRa.
 
 Groupe 2. Ecouter les messages mqtt en en déduire les valeurs pour un envoi de données via Lora.
+
 
 ### 3. Communiquer via LoRa des données
 
