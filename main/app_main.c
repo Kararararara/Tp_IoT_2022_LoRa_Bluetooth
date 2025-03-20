@@ -13,12 +13,25 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "lora.h"
+#include "driver/i2c.h"
 
 #define WIFI_SSID "iPhone de Karara"
 #define WIFI_PASS "00000000"
 #define MQTT_BROKER_URI "mqtt://test.mosquitto.org"
 #define MQTT_TOPIC "kbssa"
 #define LORA_PASSWORD "kbssa123"
+
+// Configuration I2C
+#define I2C_MASTER_SCL_IO 22
+#define I2C_MASTER_SDA_IO 21
+#define I2C_MASTER_NUM I2C_NUM_0
+#define I2C_MASTER_FREQ_HZ 100000
+#define I2C_MASTER_TX_BUF_DISABLE 0
+#define I2C_MASTER_RX_BUF_DISABLE 0
+#define I2C_MASTER_TIMEOUT_MS 1000
+
+#define GY49_SENSOR_ADDR 0x4A // Adresse I2C du capteur GY-49
+#define GY49_DATA_REG 0xAC   // Adresse du registre de données
 
 static const char *TAG = "LoRa_MQTT";
 static esp_mqtt_client_handle_t mqtt_client = NULL;
@@ -38,72 +51,51 @@ esp_err_t wifi_init_sta(void) {
 }
 
 // 📡 Gestion MQTT
-static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
-    esp_mqtt_event_handle_t event = event_data;
-    
-    switch ((esp_mqtt_event_id_t)event_id) {
-    case MQTT_EVENT_CONNECTED:
-        ESP_LOGI(TAG, "MQTT Connecté");
-        esp_mqtt_client_subscribe(mqtt_client, MQTT_TOPIC, 1);
-        break;
-
-    case MQTT_EVENT_DATA:
-        ESP_LOGI(TAG, "MQTT Reçu: %.*s", event->data_len, event->data);
-        
-        // 🔐 Ajout du mot de passe avant d'envoyer sur LoRa
-        char lora_msg[256];
-        snprintf(lora_msg, sizeof(lora_msg), "[%s] %.*s", LORA_PASSWORD, event->data_len, event->data);
-        
-        // 📡 Envoi sur LoRa
-        lora_send_packet((uint8_t *)lora_msg, strlen(lora_msg));
-        ESP_LOGI(TAG, "LORA Envoyé: %s", lora_msg);
-        break;
-
-    default:
-        break;
-    }
-}
-
-// 📡 Démarrage MQTT
 static void mqtt_app_start(void) {
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_BROKER_URI,
     };
     mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(mqtt_client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(mqtt_client);
 }
 
-// 📡 Écoute en LoRa et renvoi en MQTT
-void task_rx(void *pvParameters) {
-    ESP_LOGI(TAG, "LORA Écoute démarrée");
-    uint8_t buf[256];  
-    while(1) {
-        lora_receive(); 
-        if (lora_received()) {
-            int rxLen = lora_receive_packet(buf, sizeof(buf));
-            buf[rxLen] = '\0';
-            ESP_LOGI(TAG, "LORA Reçu: %s", buf);
-            
-            // 🔐 Vérification du mot de passe
-            if (strncmp((char *)buf, "[" LORA_PASSWORD "]", strlen(LORA_PASSWORD) + 2) == 0) {
-                char *message = (char *)buf + strlen(LORA_PASSWORD) + 3;
-                ESP_LOGI(TAG, "LORA Authentifié: %s", message);
-                
-                // 📡 Publier sur MQTT
-                esp_mqtt_client_publish(mqtt_client, MQTT_TOPIC, message, 0, 1, 0);
-                ESP_LOGI(TAG, "MQTT Envoyé: %s", message);
-            }
-        }
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
+// 📡 Initialisation I2C
+static esp_err_t i2c_master_init() {
+    i2c_config_t conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = I2C_MASTER_FREQ_HZ
+    };
+    ESP_ERROR_CHECK(i2c_param_config(I2C_MASTER_NUM, &conf));
+    return i2c_driver_install(I2C_MASTER_NUM, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
 }
 
-// 📡 Envoi d'un message LoRa
+// 📡 Lecture du capteur GY-49
+static uint16_t gy49_read_data() {
+    uint8_t data[2] = {0};
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (GY49_SENSOR_ADDR << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_write_byte(cmd, GY49_DATA_REG, true);
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (GY49_SENSOR_ADDR << 1) | I2C_MASTER_READ, true);
+    i2c_master_read(cmd, data, sizeof(data), I2C_MASTER_LAST_NACK);
+    i2c_master_stop(cmd);
+    i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+    i2c_cmd_link_delete(cmd);
+    return ((uint16_t)data[0] << 8) | data[1];
+}
+
+// 📡 Transmission LoRa avec données du capteur
 void task_tx(void *pvParameters) {
     ESP_LOGI(TAG, "LORA Transmission démarrée");
     while (1) {
-        const char *message = "[" LORA_PASSWORD "] Salut Bat & Toto";
+        uint16_t sensor_data = gy49_read_data();
+        char message[50];
+        snprintf(message, sizeof(message), "[%s] Luminosité: %d", LORA_PASSWORD, sensor_data);
         lora_send_packet((uint8_t *)message, strlen(message));
         ESP_LOGI(TAG, "LORA Envoyé: %s", message);
         vTaskDelay(pdMS_TO_TICKS(5000)); // Envoi toutes les 5 secondes
@@ -114,7 +106,8 @@ void task_tx(void *pvParameters) {
 void app_main() {
     ESP_ERROR_CHECK(wifi_init_sta());  
     mqtt_app_start();
-
+    ESP_ERROR_CHECK(i2c_master_init()); // Initialisation I2C
+    
     if (lora_init() == 0) {
         ESP_LOGE(TAG, "LORA Erreur: Module non reconnu !");
         while(1) { vTaskDelay(1); }
@@ -127,7 +120,6 @@ void app_main() {
     lora_set_bandwidth(7);
     lora_set_spreading_factor(7);
 
-    // 📡 Lancement des tâches LoRa
-    xTaskCreate(&task_rx, "RX", 1024*3, NULL, 5, NULL);
+    // 📡 Lancement de la tâche de transmission
     xTaskCreate(&task_tx, "TX", 1024*3, NULL, 5, NULL);
 }
