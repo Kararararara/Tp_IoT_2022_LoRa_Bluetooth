@@ -99,6 +99,17 @@ void task_rx(void *pvParameters) {
     }
 }
 
+// 📡 Envoi d'un message LoRa
+void task_tx(void *pvParameters) {
+    ESP_LOGI(TAG, "LORA Transmission démarrée");
+    while (1) {
+        const char *message = "[" LORA_PASSWORD "] Salut Bat & Toto";
+        lora_send_packet((uint8_t *)message, strlen(message));
+        ESP_LOGI(TAG, "LORA Envoyé: %s", message);
+        vTaskDelay(pdMS_TO_TICKS(5000)); // Envoi toutes les 5 secondes
+    }
+}
+
 // 📡 Fonction principale
 void app_main() {
     ESP_ERROR_CHECK(wifi_init_sta());  
@@ -116,6 +127,7 @@ void app_main() {
     lora_set_bandwidth(7);
     lora_set_spreading_factor(7);
 
-    // 📡 Lancement de la tâche LoRa
+    // 📡 Lancement des tâches LoRa
     xTaskCreate(&task_rx, "RX", 1024*3, NULL, 5, NULL);
+    xTaskCreate(&task_tx, "TX", 1024*3, NULL, 5, NULL);
 }
