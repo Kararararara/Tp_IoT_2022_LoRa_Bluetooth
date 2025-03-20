@@ -1,6 +1,6 @@
 Ce TP est à réaliser à deux groupes :
-  Groupe 1 : Baptiste LEPIGEON et Tommy HERMOUET.
-  Groupe 2 : Abdallah AIDARA et Kamel SEMMAR
+  - Groupe 1 : Baptiste LEPIGEON et Tommy HERMOUET.
+  - Groupe 2 : Abdallah AIDARA et Kamel SEMMAR
 
 ## 1. Mise en place
 
@@ -9,6 +9,13 @@ Ce TP est à réaliser à deux groupes :
 cf. [https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32/get-started/index.html](https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32/get-started/index.html)
 
 Documentation de la board: [http://www.smartcomputerlab.org/](http://www.smartcomputerlab.org/)
+
+ESP-IDF (Espressif IoT Development Framework) est le SDK officiel permettant de programmer les ESP32. Il fournit des bibliothèques pour :
+
+Le WiFi (mode station et access point),
+Le protocole MQTT,
+Le support de LoRa, I2C, et Bluetooth,
+L’interface avec des capteurs et périphériques.
 
 ### 2. Se connecter sur un point d'accès Wifi
 Nous avons ajouter ce bout de code pour ce connecté au partage de connexion (iPhone de Karara) :
@@ -35,7 +42,28 @@ Nous avons ajouter ce bout de code pour ce connecté au partage de connexion (iP
 ### 3. Envoyer un message mqtt sur le broker test.mosquitto.org au topic tp/alban
 (Voir image : Capture)
 
+- MQTT ( (Message Queuing Telemetry Transport) est un protocole de messagerie léger et efficace pour l'IoT.
+Dans ce TP, un 'broker' (serveur central) MQTT est utilisé : test.mosquitto.org (c'est un service public pour tester MQTT).
+Les messages sont envoyés dans des 'topics', qui désigne un canal de communication entre appareils MQTT (plus précisément, c'est une chaîne de caractère que l'on désigne comme 'nom du canal'.
+MQTT est utilisé pour transmettre des données entre les deux groupes avant de passer sur LoRa.
+
+MQTT 5.0 apporte : 
+- Des topics structurés,
+- Un système de QoS (Quality of Service),
+- Un support amélioré de la sécurité et des options avancées de publication/souscription.
+
 ## 2. LoRa
+LoRa est une technologie radio LPWAN (Low Power Wide Area Network) permettant la transmission de données à longue portée avec une faible consommation.
+
+Dans le TP, nous devons utiliser LoRa pour envoyer des données sans fil.
+Le Groupe 1 écoute les messages LoRa et les affiche.
+Le Groupe 2 envoie des messages LoRa via la board ESP32.
+
+Fréquence : 868 MHz.
+Sf = 7
+sb : 125k
+
+Pour faire fonctionner LoRa dans ESP-IDF, il faut installer dans idf_component.yml le composant [esp-idf-sx127x](https://github.com/nopnop2002/esp-idf-sx127x) puis include lora.h au début du code.
 
 ### 1. Définir des valeurs communes (à faire au tableau)
 On a définit ces valeurs pour nos deux groupes :
@@ -50,15 +78,19 @@ Groupe 2. Ecouter les messages mqtt en en déduire les valeurs pour un envoi de 
 
 ![Capture_envoi_msg](https://github.com/user-attachments/assets/5111768c-bac1-4f57-a8b9-8e413649851b)
 
+On peut voir que les parties du code réception et transmission fonctionnenent bien.
+
 ### 3. Communiquer via LoRa des données
 
 Groupe 1: Écouter les messages LoRa et les afficher.
 
-Groupe 2. Envoyer un message LoRa contenant des données (potentiellement en utilisant un caoteur.
+Groupe 2 : Envoyer un message LoRa contenant des données (potentiellement en utilisant un capteur).
 
 ![Capture_envoi_msg2](https://github.com/user-attachments/assets/33501e86-b312-40f6-afc5-a7b300ca2905)
 
-## 3. Inversion
+Ici la transmission/réception LoRa fonctionne bien.
+
+## 4. Inversion
 
 Après avoir réussi une communication, la carte du groupe 1 et celle du groupe 2 inversent leurs rôles.
 
@@ -68,7 +100,7 @@ Après avoir réussi une communication, la carte du groupe 1 et celle du groupe 
 À la place de communiquer des messages, je récupère les données de mon capteur gy-49 et l'envoie en m'authentifiant avec le mot de passe.
 
 
-## 5. Bluetooth (ou BLE)
+## 6. Bluetooth (ou BLE)
 
 À la place de communiquer les valeurs venant d'un capteur, continuer la discussion pour ouvrir un canal Bluetooth.
 
