@@ -1,5 +1,3 @@
-![image](https://github.com/user-attachments/assets/01aa849c-e273-4cc5-bfc2-6ba98be22c5c)# Tp_IoT_2022_LoRa_Bluetooth
-
 Ce TP est à réaliser à deux groupes :
   Groupe 1 : Baptiste LEPIGEON et Tommy HERMOUET.
   Groupe 2 : Abdallah AIDARA et Kamel SEMMAR
